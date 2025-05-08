@@ -12,6 +12,16 @@ from unittest import expectedFailure
 # asa_players = asa_client.get_players(names="Abby")
 # print(asa_players)
 
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+ASA_API_BASE = os.getenv("ASA_API_BASE")
+DB_NAME = os.getenv("DB_NAME")
+LOG_FILE = os.getenv("LOG_FILE")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")  # fallback to INFO
+
 import requests
 import json
 import sqlite3
@@ -19,14 +29,12 @@ import logging
 
 # Setup logging
 logging.basicConfig(
-    filename='app.log',
-    level=logging.INFO
-    #format='%(asctime)s [%(levelname)s] %(message)s'
+    filename=LOG_FILE,
+    level=getattr(logging, LOG_LEVEL.upper(), logging.INFO)
 )
 
 # Setup the DB
-#conn = sqlite3.connect('nwslfandomdb.sqlite')
-conn = sqlite3.connect('nwslfandomdb1.sqlite')
+conn = sqlite3.connect(DB_NAME)
 cur = conn.cursor()
 
 cur.executescript('''
@@ -231,20 +239,8 @@ def fetch_games_data(games, season_name):
 
 # Fetch data and store in db
 init_seasons_data(2013, 2025)
-fetch_team_data('https://app.americansocceranalysis.com/api/v1/nwsl/teams')
-fetch_player_data('https://app.americansocceranalysis.com/api/v1/nwsl/players')
-#build_rosters(2024, '315VnJ759x')
+fetch_team_data(f"{ASA_API_BASE}/teams")
+fetch_player_data(f"{ASA_API_BASE}/players")
 
-fetch_games_data('https://app.americansocceranalysis.com/api/v1/nwsl/games', '2025')
-fetch_games_data('https://app.americansocceranalysis.com/api/v1/nwsl/games', '2024')
-fetch_games_data('https://app.americansocceranalysis.com/api/v1/nwsl/games', '2023')
-fetch_games_data('https://app.americansocceranalysis.com/api/v1/nwsl/games', '2022')
-fetch_games_data('https://app.americansocceranalysis.com/api/v1/nwsl/games', '2021')
-fetch_games_data('https://app.americansocceranalysis.com/api/v1/nwsl/games', '2020')
-fetch_games_data('https://app.americansocceranalysis.com/api/v1/nwsl/games', '2019')
-fetch_games_data('https://app.americansocceranalysis.com/api/v1/nwsl/games', '2018')
-fetch_games_data('https://app.americansocceranalysis.com/api/v1/nwsl/games', '2017')
-fetch_games_data('https://app.americansocceranalysis.com/api/v1/nwsl/games', '2016')
-fetch_games_data('https://app.americansocceranalysis.com/api/v1/nwsl/games', '2015')
-
-
+for year in range(2015, 2026):  # 2026 is exclusive, so stops at 2025
+    fetch_games_data(f"{ASA_API_BASE}/games", str(year))
