@@ -1,7 +1,9 @@
-# core/db.py
-
+import os
 import sqlite3
-from config.config_loader import DB_NAME
+from dotenv import load_dotenv
+
+load_dotenv()
+DB_NAME = os.getenv("DB_NAME")
 
 def get_connection():
     """Returns a connection to the SQLite database specified in .env"""
@@ -127,7 +129,6 @@ def create_schema(conn):
         PRIMARY KEY (player_id, action_type),
         FOREIGN KEY (player_id) REFERENCES PlayerGoalsAdded(player_id)
     );
-
 
     ''')
     conn.commit()

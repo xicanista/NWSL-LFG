@@ -2,6 +2,7 @@ from core.db import get_connection, create_schema
 from config.config_loader import ASA_API_BASE
 from core.fetch_nwsl_data import init_seasons_data
 from core.asa_client import insert_player_goals_added
+import json
 
 from core.asa_client import (
     fetch_data,
@@ -12,7 +13,7 @@ from core.asa_client import (
     insert_referees,
     insert_stadiums,
     insert_player_xgoals_gk,
-    insert_player_goals_added  # ✅ this is correct
+    insert_player_goals_added
 )
 
 
@@ -45,11 +46,16 @@ def run_ingestion():
     stadium_data = fetch_data(f"{ASA_API_BASE}/stadia")
     insert_stadiums(conn, stadium_data)
 
-    player_xgk_data = fetch_data(f"{ASA_API_BASE}/players/xgoals_gk")
+    player_xgk_data = fetch_data(f"{ASA_API_BASE}/goalkeepers/xgoals")
+    print(f"📊 xGk data fetched: {len(player_xgk_data)}")
+    print(json.dumps(player_xgk_data[:2], indent=2))  # debug preview
     insert_player_xgoals_gk(conn, player_xgk_data)
 
-    goals_added_data = fetch_data(f"{ASA_API_BASE}/players/goals_added")
+    goals_added_data = fetch_data(f"{ASA_API_BASE}/players/goals-added")
+    print(f"📊 goals_added data fetched: {len(goals_added_data)}")
+    print(json.dumps(goals_added_data[:1], indent=2))  # debug preview
     insert_player_goals_added(conn, goals_added_data)
 
     conn.close()
+
 

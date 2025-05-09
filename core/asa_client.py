@@ -181,24 +181,31 @@ def insert_player_goals_added(conn, data):
     cur = conn.cursor()
 
     for player in data:
+        # Normalize team_id to string
+        team_id = player.get("team_id")
+        if isinstance(team_id, list):
+            team_id = json.dumps(team_id)
+
+        # Insert summary row
         cur.execute('''
             INSERT OR IGNORE INTO PlayerGoalsAdded (
-            player_id, team_id, general_position, minutes_played
+                player_id, team_id, general_position, minutes_played
             ) VALUES (?, ?, ?, ?)
-            ''', (
+        ''', (
             player.get("player_id"),
-            player.get("team_id"),
+            team_id,
             player.get("general_position"),
             player.get("minutes_played")
         ))
 
+        # Insert each action type
         for action in player.get("data", []):
             cur.execute('''
                 INSERT OR IGNORE INTO PlayerGoalsAddedActions (
                     player_id, action_type, goals_added_raw,
                     goals_added_above_avg, count_actions
                 ) VALUES (?, ?, ?, ?, ?)
-                ''', (
+            ''', (
                 player.get("player_id"),
                 action.get("action_type"),
                 action.get("goals_added_raw"),
@@ -209,5 +216,9 @@ def insert_player_goals_added(conn, data):
     conn.commit()
     print(f"✅ PlayerGoalsAdded inserted: {len(data)}")
 
-print("trivial comment")
+    conn.commit()
+    print(f"✅ PlayerGoalsAdded inserted: {len(data)}")
+
+print("save me")
+
 
