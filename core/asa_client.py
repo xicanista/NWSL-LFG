@@ -24,7 +24,6 @@ def insert_teams(conn, data):
 import json
 
 def insert_players(conn, data):
-    print("📥 insert_players called")
     cur = conn.cursor()
     for entry in data:
         cur.execute('''
@@ -177,7 +176,6 @@ def insert_player_xgoals_gk(conn, data):
     print(f"✅ Player GK xG entries inserted: {len(data)}")
 
 def insert_player_goals_added(conn, data):
-    print("📥 insert_player_goals_added called")
     cur = conn.cursor()
 
     for player in data:
@@ -212,13 +210,9 @@ def insert_player_goals_added(conn, data):
                 action.get("goals_added_above_avg"),
                 action.get("count_actions")
             ))
-
     conn.commit()
-    print(f"✅ PlayerGoalsAdded inserted: {len(data)}")
 
-    conn.commit()
-    print(f"✅ PlayerGoalsAdded inserted: {len(data)}")
 
-print("save me")
+print("dunt dunt")
 
 
