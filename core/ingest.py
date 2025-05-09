@@ -48,12 +48,10 @@ def run_ingestion():
 
     player_xgk_data = fetch_data(f"{ASA_API_BASE}/goalkeepers/xgoals")
     print(f"📊 xGk data fetched: {len(player_xgk_data)}")
-    print(json.dumps(player_xgk_data[:2], indent=2))  # debug preview
     insert_player_xgoals_gk(conn, player_xgk_data)
 
     goals_added_data = fetch_data(f"{ASA_API_BASE}/players/goals-added")
     print(f"📊 goals_added data fetched: {len(goals_added_data)}")
-    print(json.dumps(goals_added_data[:1], indent=2))  # debug preview
     insert_player_goals_added(conn, goals_added_data)
 
     conn.close()
