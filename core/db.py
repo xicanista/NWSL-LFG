@@ -132,4 +132,4 @@ def create_schema(conn):
 
     ''')
     conn.commit()
-    print("✅ Schema created successfully")
+    print("✅ Schema created successfully, again")

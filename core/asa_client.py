@@ -147,7 +147,6 @@ def insert_stadiums(conn, data):
     print("✅ Stadiums inserted:", len(data))
 
 def insert_player_xgoals_gk(conn, data):
-    print("📥 insert_player_xgoals_gk called")
     cur = conn.cursor()
     for entry in data:
         team_id = entry.get("team_id")
