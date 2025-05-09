@@ -63,4 +63,5 @@ def run_ingestion():
 
     conn.close()
 
+print("git is being difficult")
 
