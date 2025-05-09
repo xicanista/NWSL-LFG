@@ -1,9 +1,8 @@
-from core.db import get_connection, create_schema
-from config.config_loader import ASA_API_BASE
-from core.fetch_nwsl_data import init_seasons_data
-from core.asa_client import insert_player_goals_added
-import json
+import os
+from dotenv import load_dotenv
 
+from core.db import get_connection, create_schema
+from core.fetch_nwsl_data import init_seasons_data
 from core.asa_client import (
     fetch_data,
     insert_teams,
@@ -16,6 +15,14 @@ from core.asa_client import (
     insert_player_goals_added
 )
 
+from core.logger import get_logger
+logger = get_logger(__name__)
+
+load_dotenv()
+ASA_API_BASE = os.getenv("ASA_API_BASE")
+
+if not ASA_API_BASE:
+    raise ValueError("ASA_API_BASE is not set in .env")
 
 def run_ingestion():
     conn = get_connection()

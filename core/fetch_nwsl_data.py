@@ -90,11 +90,11 @@ def fetch_games_data(conn, base_url, season_name):
     try:
         call = f"{base_url}?season_name={season_name}"
         response = requests.get(call)
-        logging.info(f"API response status: {response.status_code}")
+        #logging.info(f"API response status: {response.status_code}")
         response.raise_for_status()
         data = response.json()
     except Exception:
-        logging.exception(f"Failed to fetch games data for season {season_name}")
+        #logging.exception(f"Failed to fetch games data for season {season_name}")
         return
 
     cur = conn.cursor()

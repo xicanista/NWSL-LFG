@@ -129,6 +129,12 @@ def create_schema(conn):
         PRIMARY KEY (player_id, action_type),
         FOREIGN KEY (player_id) REFERENCES PlayerGoalsAdded(player_id)
     );
+    
+    CREATE TABLE IF NOT EXISTS favorites (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        team_id TEXT NOT NULL UNIQUE
+    );
+
 
     ''')
     conn.commit()
