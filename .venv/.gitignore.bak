@@ -1,0 +1,67 @@
+# OLD CODE. UPDATED 5/8/2025 WITH WHAT IS SHOWN BELOW
+# created by virtualenv automatically
+#*
+
+# =======================================
+# Python Bytecode & Cache
+# =======================================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# =======================================
+# Virtual Environment
+# =======================================
+.venv/
+env/
+venv/
+ENV/
+*.env
+
+# =======================================
+# Logs and Runtime Files
+# =======================================
+*.log
+*.sqlite
+*.db
+*.pid
+
+# =======================================
+# macOS System Files
+# =======================================
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# =======================================
+# PyCharm (JetBrains IDE)
+# =======================================
+.idea/
+*.iml
+
+# =======================================
+# VSCode (if used)
+# =======================================
+.vscode/
+
+# =======================================
+# Environment and Config Files
+# =======================================
+.env
+.env.*  # in case you use .env.dev, .env.prod, etc.
+
+# =======================================
+# Jupyter Notebooks Checkpoints
+# =======================================
+.ipynb_checkpoints/
+
+# =======================================
+# Test and Coverage Files
+# =======================================
+htmlcov/
+.tox/
+.coverage
+coverage.xml
+pytest_cache/
