@@ -4,7 +4,7 @@
 
 **NWSL-LFG** is a backend AI-powered personalization platform that helps National Women’s Soccer League (NWSL) fans engage more deeply with content, find matches to attend, and buy merch they love — driven by real-time behavioral analytics, recommendation systems, and generative AI.
 
-Built as a 90-day project focused on building real-time analytics pipelines and intelligent recommendation systems — with a Phase 2 plan for full frontend integration and deployment.
+A project focused on building real-time analytics pipelines and intelligent recommendation systems — with a Phase 2 plan for full frontend integration and deployment.
 
 ---
 
