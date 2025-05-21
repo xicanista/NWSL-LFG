@@ -2,7 +2,8 @@ import os
 from dotenv import load_dotenv
 
 from core.db import get_connection, create_schema
-from core.fetch_nwsl_data import init_seasons_data
+#from core.fetch_nwsl_data import init_seasons_data
+from core.db import init_seasons_data
 from core.asa_client import (
     fetch_data,
     insert_teams,
@@ -11,8 +12,14 @@ from core.asa_client import (
     insert_managers,
     insert_referees,
     insert_stadiums,
+    insert_player_goals_added,
+    insert_player_xpass,
+    insert_periods,
+    insert_player_xgoals,
     insert_player_xgoals_gk,
-    insert_player_goals_added
+    insert_team_xgoals,
+    insert_game_xgoals,
+    insert_shots
 )
 
 from core.logger import get_logger
@@ -53,15 +60,37 @@ def run_ingestion():
     stadium_data = fetch_data(f"{ASA_API_BASE}/stadia")
     insert_stadiums(conn, stadium_data)
 
-    player_xgk_data = fetch_data(f"{ASA_API_BASE}/goalkeepers/xgoals")
-    print(f"📊 xGk data fetched: {len(player_xgk_data)}")
-    insert_player_xgoals_gk(conn, player_xgk_data)
-
     goals_added_data = fetch_data(f"{ASA_API_BASE}/players/goals-added")
     print(f"📊 goals_added data fetched: {len(goals_added_data)}")
     insert_player_goals_added(conn, goals_added_data)
 
-    conn.close()
+    player_xpass_data = fetch_data(f"{ASA_API_BASE}/players/xpass")
+    print(f"📊 xPass data fetched: {len(player_xpass_data)}")
+    insert_player_xpass(conn, player_xpass_data)
 
-print("git is being difficult")
+    teams_xgoals_data = fetch_data(f"{ASA_API_BASE}/teams/xgoals")
+    print(f"📊 Team xGoals data fetched: {len(teams_xgoals_data)}")
+    insert_team_xgoals(conn, teams_xgoals_data)
+
+    players_xgoals_data = fetch_data(f"{ASA_API_BASE}/players/xgoals")
+    print(f"📊 Player xGoals data fetched: {len(players_xgoals_data)}")
+    insert_player_xgoals(conn, players_xgoals_data)
+
+    goalkeepers_xgoals_data = fetch_data(f"{ASA_API_BASE}/goalkeepers/xgoals")
+    print(f"🧤 Goalkeeper xGoals data fetched: {len(goalkeepers_xgoals_data)}")
+    insert_player_xgoals_gk(conn, goalkeepers_xgoals_data)
+
+    games_xgoals_data = fetch_data(f"{ASA_API_BASE}/games/xgoals")
+    print(f"📆 Game xGoals data fetched: {len(games_xgoals_data)}")
+    insert_game_xgoals(conn, games_xgoals_data)
+
+    periods_data = fetch_data(f"{ASA_API_BASE}/games/periods")
+    print(f"🕓 Periods data fetched: {len(periods_data)}")
+    insert_periods(conn, periods_data)
+
+    shots_data = fetch_data(f"{ASA_API_BASE}/games/shots")
+    print(f"🎯 Shots data fetched: {len(shots_data)}")
+    insert_shots(conn, shots_data)
+
+    conn.close()
 
