@@ -36,7 +36,7 @@ def run_ingestion():
     create_schema(conn)
 
     # Insert seasons
-    init_seasons_data(conn, 2013, 2025)
+    init_seasons_data(conn, 2013, 2026)
 
     # Fetch and insert teams
     team_data = fetch_data(f"{ASA_API_BASE}/teams")
@@ -46,7 +46,7 @@ def run_ingestion():
     print(f"👥 Players fetched: {len(player_data)}")
     insert_players(conn, player_data)
 
-    for year in range(2015, 2026):
+    for year in range(2015, 2027):
         game_data = fetch_data(f"{ASA_API_BASE}/games?season_name={year}")
         print(f"🎮 Games for {year}: {len(game_data)}")
         insert_games(conn, game_data)

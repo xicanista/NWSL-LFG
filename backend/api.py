@@ -1,12 +1,15 @@
+import os
+import psycopg2
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
-import sqlite3
+
+load_dotenv()
 
 app = FastAPI()
 
-# CORS setup to connect with frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -15,27 +18,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Request model for saving favorites
 class FavoritesRequest(BaseModel):
     favorites: List[str]
 
-# SQLite connection helper
 def get_db_connection():
-    return sqlite3.connect("nwslfandomdb1.sqlite")
+    return psycopg2.connect(os.getenv("DATABASE_URL"))
 
-# POST endpoint to save favorite teams
 @app.post("/api/favorites")
 def save_favorites(request: FavoritesRequest):
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("DELETE FROM favorites")  # Clear all first
+    cur.execute("DELETE FROM favorites")
     for team_id in request.favorites:
-        cur.execute("INSERT INTO favorites (team_id) VALUES (?)", (team_id,))
+        cur.execute("INSERT INTO favorites (team_id) VALUES (%s)", (team_id,))
     conn.commit()
     conn.close()
     return {"favorites": request.favorites}
 
-# GET endpoint to retrieve favorite teams
 @app.get("/api/favorites")
 def get_favorites():
     conn = get_db_connection()
@@ -45,44 +44,53 @@ def get_favorites():
     conn.close()
     return {"favorites": [row[0] for row in rows]}
 
-# GET endpoint to return all teams (stubbed data)
 @app.get("/api/teams")
 def get_all_teams():
-    return {
-        "teams": [
-            {"id": "por", "name": "Portland Thorns"},
-            {"id": "sd", "name": "San Diego Wave"},
-            {"id": "kc", "name": "Kansas City Current"}
-        ]
-    }
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id, name FROM Teams ORDER BY name")
+    rows = cur.fetchall()
+    conn.close()
+    return {"teams": [{"id": row[0], "name": row[1]} for row in rows]}
 
-# GET endpoint for player details
 @app.get("/api/player/{firstname}-{lastname}")
 def get_player_details(firstname: str, lastname: str):
-    print(f"Received request for player: {firstname} {lastname}")
-    if firstname.lower() == "sophia" and lastname.lower() == "smith":
-        return {
-            "full_name": "Sophia Smith",
-            "position": "Forward",
-            "nationality": "USA",
-            "image_url": "https://example.com/sophia-smith.jpg",
-            "stats": {
-                "goals": 12,
-                "assists": 5,
-                "minutes_played": 980
-            },
-            "merch": [
-                {
-                    "name": "Sophia Smith Home Jersey",
-                    "image_url": "https://example.com/home-jersey.jpg",
-                    "buy_link": "https://shop.example.com/home-jersey"
-                },
-                {
-                    "name": "Sophia Smith Away Jersey",
-                    "image_url": "https://example.com/away-jersey.jpg",
-                    "buy_link": "https://shop.example.com/away-jersey"
-                }
-            ]
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT player_id, player_name, primary_general_position, nationality FROM Players WHERE LOWER(player_name) = LOWER(%s)",
+        (f"{firstname} {lastname}",)
+    )
+    player = cur.fetchone()
+
+    if not player:
+        conn.close()
+        return {"error": "Player not found"}
+
+    player_id, player_name, position, nationality = player
+
+    cur.execute(
+        "SELECT goals, shots, shots_on_target, xgoals, primary_assists, minutes_played FROM PlayerXGoals WHERE player_id = %s",
+        (player_id,)
+    )
+    stats_row = cur.fetchone()
+    conn.close()
+
+    stats = {}
+    if stats_row:
+        stats = {
+            "goals": stats_row[0],
+            "shots": stats_row[1],
+            "shots_on_target": stats_row[2],
+            "xgoals": stats_row[3],
+            "assists": stats_row[4],
+            "minutes_played": stats_row[5],
         }
 
-    return {"error": "Player not found"}, 404
+    return {
+        "full_name": player_name,
+        "position": position,
+        "nationality": nationality,
+        "stats": stats,
+        "merch": []
+    }

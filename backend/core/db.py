@@ -1,40 +1,41 @@
 import os
-import sqlite3
+import psycopg2
 from dotenv import load_dotenv
 
 load_dotenv()
-DB_NAME = os.getenv("DB_NAME")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 def init_seasons_data(conn, firstseason, thisyear):
     cur = conn.cursor()
     count = 1
     while thisyear >= firstseason:
-        cur.execute('''INSERT OR IGNORE INTO Seasons (season_id, season_name)
-                        VALUES (?, ?)''', (count, str(thisyear)))
+        cur.execute(
+            'INSERT INTO Seasons (season_id, season_name) VALUES (%s, %s) ON CONFLICT DO NOTHING',
+            (count, str(thisyear))
+        )
         thisyear -= 1
         count += 1
     conn.commit()
 
 def get_connection():
-    """Returns a connection to the SQLite database specified in .env"""
-    print(f"🔗 Connecting to DB: {DB_NAME}")
-    return sqlite3.connect(DB_NAME)
+    print(f"🔗 Connecting to Postgres DB")
+    return psycopg2.connect(DATABASE_URL)
 
 def create_schema(conn):
-    """Creates all tables using modular definitions and per-table error handling."""
     cur = conn.cursor()
 
     def safe_execute(sql, name):
         try:
             cur.execute(sql)
             print(f"✅ Created table: {name}")
-        except sqlite3.OperationalError as e:
+        except psycopg2.Error as e:
+            conn.rollback()
             print(f"❌ Error creating {name}: {e}")
 
     tables = {
         "Teams": '''
             CREATE TABLE IF NOT EXISTS Teams (
-                id TEXT NOT NULL PRIMARY KEY UNIQUE,
+                id TEXT NOT NULL PRIMARY KEY,
                 name TEXT UNIQUE,
                 short_name TEXT UNIQUE,
                 abbreviation TEXT UNIQUE
@@ -43,15 +44,15 @@ def create_schema(conn):
 
         "Players": '''
             CREATE TABLE IF NOT EXISTS Players (
-                player_id TEXT NOT NULL PRIMARY KEY UNIQUE,
-                player_name TEXT, 
+                player_id TEXT NOT NULL PRIMARY KEY,
+                player_name TEXT,
                 birth_date DATE,
                 height_ft INTEGER,
                 height_in INTEGER,
                 nationality TEXT,
-                primary_broad_position TEXT, 
+                primary_broad_position TEXT,
                 primary_general_position TEXT,
-                secondary_broad_position TEXT, 
+                secondary_broad_position TEXT,
                 secondary_general_position TEXT,
                 season_name TEXT
             )
@@ -59,36 +60,36 @@ def create_schema(conn):
 
         "Seasons": '''
             CREATE TABLE IF NOT EXISTS Seasons (
-                season_id INTEGER NOT NULL PRIMARY KEY UNIQUE,
+                season_id INTEGER NOT NULL PRIMARY KEY,
                 season_name TEXT UNIQUE
             )
         ''',
 
         "Games": '''
             CREATE TABLE IF NOT EXISTS Games (
-                game_id TEXT NOT NULL PRIMARY KEY UNIQUE,
-                date_time_utc DATE, 
-                home_score INTEGER, 
+                game_id TEXT NOT NULL PRIMARY KEY,
+                date_time_utc TIMESTAMP,
+                home_score INTEGER,
                 away_score INTEGER,
-                home_team_id INTEGER,
-                away_team_id INTEGER,
-                referee_id INTEGER,
-                stadium_id INTEGER,
-                home_manager_id INTEGER,
-                away_manager_id INTEGER,
+                home_team_id TEXT,
+                away_team_id TEXT,
+                referee_id TEXT,
+                stadium_id TEXT,
+                home_manager_id TEXT,
+                away_manager_id TEXT,
                 expanded_minutes INTEGER,
                 season_name TEXT,
-                matchday DATE,
+                matchday TEXT,
                 attendance INTEGER,
                 knockout_game TEXT,
                 status TEXT,
-                last_updated_utc DATE
+                last_updated_utc TIMESTAMP
             )
         ''',
 
         "Referees": '''
             CREATE TABLE IF NOT EXISTS Referees (
-                referee_id TEXT NOT NULL PRIMARY KEY UNIQUE,
+                referee_id TEXT NOT NULL PRIMARY KEY,
                 referee_name TEXT,
                 nationality TEXT
             )
@@ -96,7 +97,7 @@ def create_schema(conn):
 
         "Managers": '''
             CREATE TABLE IF NOT EXISTS Managers (
-                manager_id TEXT NOT NULL PRIMARY KEY UNIQUE,
+                manager_id TEXT NOT NULL PRIMARY KEY,
                 manager_name TEXT,
                 nationality TEXT
             )
@@ -104,7 +105,7 @@ def create_schema(conn):
 
         "Stadiums": '''
             CREATE TABLE IF NOT EXISTS Stadiums (
-                stadium_id TEXT NOT NULL PRIMARY KEY UNIQUE,
+                stadium_id TEXT NOT NULL PRIMARY KEY,
                 stadium_name TEXT,
                 year_built INTEGER,
                 capacity INTEGER,
@@ -124,7 +125,7 @@ def create_schema(conn):
 
         "PlayerXGoalsGK": '''
             CREATE TABLE IF NOT EXISTS PlayerXGoalsGK (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 player_id TEXT,
                 team_id TEXT,
                 minutes_played INTEGER,
@@ -161,7 +162,7 @@ def create_schema(conn):
 
         "favorites": '''
             CREATE TABLE IF NOT EXISTS favorites (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 team_id TEXT NOT NULL UNIQUE
             )
         ''',
@@ -201,7 +202,7 @@ def create_schema(conn):
                 home_score INTEGER,
                 away_score INTEGER,
                 shot_xg FLOAT,
-                shot_psxg INTEGER, 
+                shot_psxg FLOAT,
                 head INTEGER,
                 assist_through_ball INTEGER,
                 assist_cross INTEGER,
@@ -243,7 +244,7 @@ def create_schema(conn):
 
         "PlayerXGoals": '''
             CREATE TABLE IF NOT EXISTS PlayerXGoals (
-                player_id TEXT KEY,
+                player_id TEXT PRIMARY KEY,
                 team_id TEXT,
                 general_position TEXT,
                 minutes_played INTEGER,
@@ -261,7 +262,6 @@ def create_schema(conn):
                 xgoals_plus_xassists FLOAT,
                 points_added FLOAT,
                 xpoints_added FLOAT,
-                PRIMARY KEY (player_id),
                 FOREIGN KEY (player_id) REFERENCES Players(player_id),
                 FOREIGN KEY (team_id) REFERENCES Teams(id)
             )

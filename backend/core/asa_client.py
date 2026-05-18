@@ -1,5 +1,6 @@
-import requests
+import json
 import logging
+import requests
 
 def fetch_data(url):
     try:
@@ -9,27 +10,27 @@ def fetch_data(url):
         return response.json()
     except Exception as e:
         logging.exception(f"Failed to fetch data from {url}")
-        return []  # Return empty list to avoid crashing pipeline
+        return []
 
 def insert_teams(conn, data):
     cur = conn.cursor()
     for entry in data:
-        cur.execute('''INSERT OR IGNORE INTO Teams (id, name, short_name, abbreviation)
-                       VALUES (?, ?, ?, ?)''',
-                       (entry['team_id'], entry['team_name'], entry['team_short_name'], entry['team_abbreviation']))
+        cur.execute(
+            'INSERT INTO Teams (id, name, short_name, abbreviation) VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING',
+            (entry['team_id'], entry['team_name'], entry['team_short_name'], entry['team_abbreviation'])
+        )
     conn.commit()
-
-import json
 
 def insert_players(conn, data):
     cur = conn.cursor()
     for entry in data:
         cur.execute('''
-            INSERT OR IGNORE INTO Players (
+            INSERT INTO Players (
                 player_id, player_name, height_ft, height_in, birth_date,
                 nationality, primary_broad_position, primary_general_position,
                 secondary_broad_position, secondary_general_position, season_name
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING
         ''', (
             entry.get('player_id'),
             entry.get('player_name'),
@@ -41,24 +42,24 @@ def insert_players(conn, data):
             entry.get('primary_general_position'),
             entry.get('secondary_broad_position'),
             entry.get('secondary_general_position'),
-            json.dumps(entry.get('season_name'))  # in case this is a list
+            json.dumps(entry.get('season_name'))
         ))
     conn.commit()
     print("✅ Players inserted:", len(data))
-
 
 def insert_games(conn, data):
     print("📥 insert_games called")
     cur = conn.cursor()
     for entry in data:
         cur.execute('''
-            INSERT OR IGNORE INTO Games (
+            INSERT INTO Games (
                 game_id, date_time_utc, home_score, away_score,
                 home_team_id, away_team_id, referee_id, stadium_id,
                 home_manager_id, away_manager_id, expanded_minutes,
                 season_name, matchday, attendance, knockout_game,
                 status, last_updated_utc
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING
         ''', (
             entry.get('game_id'),
             entry.get('date_time_utc'),
@@ -81,20 +82,14 @@ def insert_games(conn, data):
     conn.commit()
     print("✅ Games inserted:", len(data))
 
-
 def insert_managers(conn, data):
     print("📥 insert_managers called")
     cur = conn.cursor()
     for entry in data:
-        cur.execute('''
-            INSERT OR IGNORE INTO Managers (
-                manager_id, manager_name, nationality
-            ) VALUES (?, ?, ?)
-        ''', (
-            entry.get('manager_id'),
-            entry.get('manager_name'),
-            entry.get('nationality')
-        ))
+        cur.execute(
+            'INSERT INTO Managers (manager_id, manager_name, nationality) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING',
+            (entry.get('manager_id'), entry.get('manager_name'), entry.get('nationality'))
+        )
     conn.commit()
     print("✅ Managers inserted:", len(data))
 
@@ -102,15 +97,10 @@ def insert_referees(conn, data):
     print("📥 insert_referees called")
     cur = conn.cursor()
     for entry in data:
-        cur.execute('''
-            INSERT OR IGNORE INTO Referees (
-                referee_id, referee_name, nationality
-            ) VALUES (?, ?, ?)
-        ''', (
-            entry.get('referee_id'),
-            entry.get('referee_name'),
-            entry.get('nationality')
-        ))
+        cur.execute(
+            'INSERT INTO Referees (referee_id, referee_name, nationality) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING',
+            (entry.get('referee_id'), entry.get('referee_name'), entry.get('nationality'))
+        )
     conn.commit()
     print("✅ Referees inserted:", len(data))
 
@@ -119,11 +109,12 @@ def insert_stadiums(conn, data):
     cur = conn.cursor()
     for entry in data:
         cur.execute('''
-            INSERT OR IGNORE INTO Stadiums (
+            INSERT INTO Stadiums (
                 stadium_id, stadium_name, year_built, capacity, roof, turf,
                 street, city, province, country, postal_code,
                 latitude, longitude, field_x, field_y
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING
         ''', (
             entry.get('stadium_id'),
             entry.get('stadium_name'),
@@ -144,10 +135,7 @@ def insert_stadiums(conn, data):
     conn.commit()
     print("✅ Stadiums inserted:", len(data))
 
-
-
 def insert_player_goals_added(conn, data):
-    """Insert summary + per-action goals added data for each player without overwriting existing rows."""
     print("📥 insert_player_goals_added called")
     cur = conn.cursor()
     inserted_players = 0
@@ -159,27 +147,21 @@ def insert_player_goals_added(conn, data):
         general_position = player.get("general_position")
         minutes_played = player.get("minutes_played")
 
-        # Normalize team_id to string if it's a list
         if isinstance(team_id, list):
             team_id = json.dumps(team_id)
 
-        # Insert into PlayerGoalsAdded (ignore if already exists)
         cur.execute('''
-            INSERT OR IGNORE INTO PlayerGoalsAdded (
-                player_id, team_id, general_position, minutes_played
-            ) VALUES (?, ?, ?, ?)
-        ''', (
-            player_id, team_id, general_position, minutes_played
-        ))
-        inserted_players += cur.rowcount  # Only count if inserted
+            INSERT INTO PlayerGoalsAdded (player_id, team_id, general_position, minutes_played)
+            VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING
+        ''', (player_id, team_id, general_position, minutes_played))
+        inserted_players += cur.rowcount
 
-        # Insert each action type (ignore duplicates)
         for action in player.get("data", []):
             cur.execute('''
-                INSERT OR IGNORE INTO PlayerGoalsAddedActions (
+                INSERT INTO PlayerGoalsAddedActions (
                     player_id, action_type, goals_added_raw,
                     goals_added_above_avg, count_actions
-                ) VALUES (?, ?, ?, ?, ?)
+                ) VALUES (%s, %s, %s, %s, %s) ON CONFLICT DO NOTHING
             ''', (
                 player_id,
                 action.get("action_type"),
@@ -194,7 +176,6 @@ def insert_player_goals_added(conn, data):
     print(f"✅ Inserted {inserted_actions} new player action rows")
 
 def upsert_player_goals_added(conn, data):
-    """Upsert PlayerGoalsAdded and PlayerGoalsAddedActions with change detection."""
     print("📥 upsert_player_goals_added called")
     cur = conn.cursor()
     updated_players = 0
@@ -211,65 +192,52 @@ def upsert_player_goals_added(conn, data):
         if isinstance(team_id, list):
             team_id = json.dumps(team_id)
 
-        # Check existing PlayerGoalsAdded
-        cur.execute('SELECT team_id, general_position, minutes_played FROM PlayerGoalsAdded WHERE player_id = ?', (player_id,))
+        cur.execute(
+            'SELECT team_id, general_position, minutes_played FROM PlayerGoalsAdded WHERE player_id = %s',
+            (player_id,)
+        )
         existing = cur.fetchone()
 
         if existing:
             if (existing[0] != team_id) or (existing[1] != general_position) or (existing[2] != minutes_played):
-                cur.execute('''
-                    UPDATE PlayerGoalsAdded
-                    SET team_id = ?, general_position = ?, minutes_played = ?
-                    WHERE player_id = ?
-                ''', (team_id, general_position, minutes_played, player_id))
+                cur.execute(
+                    'UPDATE PlayerGoalsAdded SET team_id = %s, general_position = %s, minutes_played = %s WHERE player_id = %s',
+                    (team_id, general_position, minutes_played, player_id)
+                )
                 updated_players += 1
         else:
-            cur.execute('''
-                INSERT INTO PlayerGoalsAdded (
-                    player_id, team_id, general_position, minutes_played
-                ) VALUES (?, ?, ?, ?)
-            ''', (player_id, team_id, general_position, minutes_played))
+            cur.execute(
+                'INSERT INTO PlayerGoalsAdded (player_id, team_id, general_position, minutes_played) VALUES (%s, %s, %s, %s)',
+                (player_id, team_id, general_position, minutes_played)
+            )
             inserted_players += 1
 
-        # Upsert PlayerGoalsAddedActions
         for action in player.get("data", []):
             action_type = action.get("action_type")
             goals_added_raw = action.get("goals_added_raw")
             goals_added_above_avg = action.get("goals_added_above_avg")
             count_actions = action.get("count_actions")
 
-            cur.execute('''
-                SELECT goals_added_raw, goals_added_above_avg, count_actions
-                FROM PlayerGoalsAddedActions
-                WHERE player_id = ? AND action_type = ?
-            ''', (player_id, action_type))
+            cur.execute(
+                'SELECT goals_added_raw, goals_added_above_avg, count_actions FROM PlayerGoalsAddedActions WHERE player_id = %s AND action_type = %s',
+                (player_id, action_type)
+            )
             existing_action = cur.fetchone()
 
             if existing_action:
-                if (
-                    existing_action[0] != goals_added_raw or
-                    existing_action[1] != goals_added_above_avg or
-                    existing_action[2] != count_actions
-                ):
-                    cur.execute('''
-                        UPDATE PlayerGoalsAddedActions
-                        SET goals_added_raw = ?, goals_added_above_avg = ?, count_actions = ?
-                        WHERE player_id = ? AND action_type = ?
-                    ''', (
-                        goals_added_raw, goals_added_above_avg, count_actions,
-                        player_id, action_type
-                    ))
+                if (existing_action[0] != goals_added_raw or
+                        existing_action[1] != goals_added_above_avg or
+                        existing_action[2] != count_actions):
+                    cur.execute(
+                        'UPDATE PlayerGoalsAddedActions SET goals_added_raw = %s, goals_added_above_avg = %s, count_actions = %s WHERE player_id = %s AND action_type = %s',
+                        (goals_added_raw, goals_added_above_avg, count_actions, player_id, action_type)
+                    )
                     updated_actions += 1
             else:
-                cur.execute('''
-                    INSERT INTO PlayerGoalsAddedActions (
-                        player_id, action_type, goals_added_raw,
-                        goals_added_above_avg, count_actions
-                    ) VALUES (?, ?, ?, ?, ?)
-                ''', (
-                    player_id, action_type,
-                    goals_added_raw, goals_added_above_avg, count_actions
-                ))
+                cur.execute(
+                    'INSERT INTO PlayerGoalsAddedActions (player_id, action_type, goals_added_raw, goals_added_above_avg, count_actions) VALUES (%s, %s, %s, %s, %s)',
+                    (player_id, action_type, goals_added_raw, goals_added_above_avg, count_actions)
+                )
                 inserted_actions += 1
 
     conn.commit()
@@ -284,16 +252,17 @@ def insert_player_xpass(conn, data):
     for entry in data:
         team_id = entry.get("team_id")
         if isinstance(team_id, list):
-            team_id = json.dumps(team_id)  # flatten to JSON string
+            team_id = json.dumps(team_id)
 
         cur.execute('''
-            INSERT OR IGNORE INTO PlayerXpass (
+            INSERT INTO PlayerXpass (
                 player_id, team_id, general_position, minutes_played,
                 attempted_passes, pass_completion_percentage,
                 xpass_completion_percentage, passes_completed_over_expected,
                 passes_completed_over_expected_p100, avg_distance_yds,
                 avg_vertical_distance_yds, share_team_touches, count_games
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING
         ''', (
             entry.get("player_id"),
             team_id,
@@ -325,14 +294,15 @@ def insert_player_xgoals(conn, data):
             team_id = json.dumps(team_id)
 
         cur.execute('''
-            INSERT OR IGNORE INTO PlayerXgoals (
+            INSERT INTO PlayerXGoals (
                 player_id, team_id, general_position, minutes_played,
                 shots, shots_on_target, goals, xgoals, xplace,
                 goals_minus_xgoals, key_passes, primary_assists,
                 xassists, primary_assists_minus_xassists,
                 goals_plus_primary_assists, xgoals_plus_xassists,
                 points_added, xpoints_added
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING
         ''', (
             entry.get("player_id"),
             team_id,
@@ -365,12 +335,13 @@ def insert_team_xgoals(conn, data):
 
     for entry in data:
         cur.execute('''
-            INSERT OR IGNORE INTO TeamXGoals (
+            INSERT INTO TeamXGoals (
                 team_id, count_games, shots_for, shots_against,
                 goals_for, goals_against, goal_difference,
                 xgoals_for, xgoals_against, xgoal_difference,
                 goal_difference_minus_xgoal_difference, points, xpoints
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING
         ''', (
             entry.get("team_id"),
             entry.get("count_games"),
@@ -403,18 +374,18 @@ def insert_player_xgoals_gk(conn, data):
                 player_id, team_id, minutes_played, shots_faced,
                 goals_conceded, saves, share_headed_shots,
                 xgoals_gk_faced, goals_minus_xgoals_gk, goals_divided_by_xgoals_gk
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                entry.get("player_id"),
-                team_id,
-                entry.get("minutes_played"),
-                entry.get("shots_faced"),
-                entry.get("goals_conceded"),
-                entry.get("saves"),
-                entry.get("share_headed_shots"),
-                entry.get("xgoals_gk_faced"),
-                entry.get("goals_minus_xgoals_gk"),
-                entry.get("goals_divided_by_xgoals_gk")
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ''', (
+            entry.get("player_id"),
+            team_id,
+            entry.get("minutes_played"),
+            entry.get("shots_faced"),
+            entry.get("goals_conceded"),
+            entry.get("saves"),
+            entry.get("share_headed_shots"),
+            entry.get("xgoals_gk_faced"),
+            entry.get("goals_minus_xgoals_gk"),
+            entry.get("goals_divided_by_xgoals_gk")
         ))
     conn.commit()
     print(f"✅ Player GK xG entries inserted: {len(data)}")
@@ -426,12 +397,13 @@ def insert_game_xgoals(conn, data):
 
     for entry in data:
         cur.execute('''
-            INSERT OR IGNORE INTO GameXgoals (
+            INSERT INTO GameXgoals (
                 game_id, home_team_id, away_team_id,
                 xgoals_home, xgoals_away,
                 home_goals, away_goals,
                 xpoints_home, xpoints_away
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING
         ''', (
             entry.get("game_id"),
             entry.get("home_team_id"),
@@ -448,7 +420,6 @@ def insert_game_xgoals(conn, data):
     conn.commit()
     print(f"✅ Game xGoals entries inserted: {inserted}")
 
-
 def insert_periods(conn, data):
     print("📥 insert_periods called")
     cur = conn.cursor()
@@ -456,11 +427,12 @@ def insert_periods(conn, data):
 
     for entry in data:
         cur.execute('''
-            INSERT OR IGNORE INTO Periods (
+            INSERT INTO Periods (
                 game_id, period_id,
                 min_expanded_minute, min_game_minute,
                 max_expanded_minute, max_game_minute
-            ) VALUES (?, ?, ?, ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING
         ''', (
             entry.get("game_id"),
             entry.get("period_id"),
@@ -482,7 +454,7 @@ def insert_shots(conn, data):
     for entry in data:
         try:
             cur.execute('''
-                INSERT OR IGNORE INTO Shots (
+                INSERT INTO Shots (
                     game_id, period_id, expanded_minute, game_minute,
                     team_id, shooter_player_id, assist_player_id,
                     shot_location_x, shot_location_y,
@@ -492,7 +464,7 @@ def insert_shots(conn, data):
                     home_score, away_score, shot_xg, shot_psxg,
                     head, assist_through_ball, assist_cross,
                     pattern_of_play, shot_order
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ''', (
                 entry.get("game_id"),
                 entry.get("period_id"),
@@ -528,5 +500,3 @@ def insert_shots(conn, data):
 
     conn.commit()
     print(f"✅ Shots entries inserted: {inserted}")
-
-
