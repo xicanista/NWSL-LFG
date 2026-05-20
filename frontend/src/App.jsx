@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import PlayerPage from "./pages/PlayerPage";
 import MyNWSLPage from "./pages/MyNWSLPage";
 import TeamPage from "./pages/TeamPage";
+import { getTeamTheme } from "./teamThemes";
 
 function HomePage() {
   const [teams, setTeams] = useState([]);
@@ -115,15 +116,22 @@ function HomePage() {
       <section style={{ marginBottom: "3rem" }}>
         <h2>Teams</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "0.5rem" }}>
-          {teams.map(team => (
-            <Link key={team.id} to={`/team/${team.id}`} style={{
-              padding: "0.6rem 1rem", border: "1px solid #e0e0e0", borderRadius: "6px",
-              textDecoration: "none", color: "#222", backgroundColor: "#fafafa",
-              fontWeight: "500"
-            }}>
-              {team.name}
-            </Link>
-          ))}
+          {teams.map(team => {
+            const theme = getTeamTheme(team.id);
+            return (
+              <Link key={team.id} to={`/team/${team.id}`} style={{
+                padding: "0.75rem 1rem", borderRadius: "8px",
+                textDecoration: "none", fontWeight: "600", fontSize: "0.95rem",
+                backgroundColor: theme.primary, color: theme.primaryText,
+                display: "block", transition: "opacity 0.15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
+              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+              >
+                {team.name}
+              </Link>
+            );
+          })}
         </div>
       </section>
 
