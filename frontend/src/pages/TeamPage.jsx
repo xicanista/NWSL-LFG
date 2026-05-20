@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { getTeamTheme } from "../teamThemes";
 
 const STAT_EXPLANATIONS = {
   count_games:    { label: "Games Played", explain: "Total games played across all seasons in the database." },
@@ -21,7 +22,7 @@ const STAT_ORDER = [
   "shots_for", "shots_against", "points", "xpoints"
 ];
 
-function StatRow({ statKey, value }) {
+function StatRow({ statKey, value, theme }) {
   const [open, setOpen] = useState(false);
   const meta = STAT_EXPLANATIONS[statKey];
   if (!meta) return null;
@@ -32,9 +33,9 @@ function StatRow({ statKey, value }) {
         <button
           onClick={() => setOpen(!open)}
           style={{
-            marginLeft: "6px", background: "none", border: "1px solid #c4b5fd",
+            marginLeft: "6px", background: "none", border: `1px solid ${theme.accent}`,
             borderRadius: "50%", width: "18px", height: "18px", cursor: "pointer",
-            fontSize: "11px", color: "#7c3aed", lineHeight: "16px", padding: 0
+            fontSize: "11px", color: theme.accent, lineHeight: "16px", padding: 0
           }}
           title="What does this mean?"
         >?</button>
@@ -44,8 +45,8 @@ function StatRow({ statKey, value }) {
         {open && (
           <div style={{
             marginTop: "4px", fontSize: "0.85rem", color: "#555",
-            backgroundColor: "#faf5ff", padding: "6px 10px",
-            borderRadius: "6px", borderLeft: "3px solid #7c3aed"
+            backgroundColor: theme.light, padding: "6px 10px",
+            borderRadius: "6px", borderLeft: `3px solid ${theme.accent}`
           }}>
             {meta.explain}
           </div>
@@ -60,6 +61,8 @@ export default function TeamPage() {
   const [team, setTeam] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const theme = getTeamTheme(teamId);
 
   useEffect(() => {
     fetch(`http://localhost:8000/api/team/${teamId}`)
@@ -78,129 +81,152 @@ export default function TeamPage() {
   const s = team.stats;
 
   return (
-    <div style={{ maxWidth: "900px", margin: "0 auto", padding: "2rem" }}>
-      <Link to="/" style={{ color: "#7c3aed", textDecoration: "none" }}>← Back</Link>
-      <h1 style={{ marginTop: "1rem" }}>{team.name} <span style={{ color: "#888", fontWeight: "normal" }}>({team.abbreviation})</span></h1>
+    <div style={{ fontFamily: "system-ui, sans-serif" }}>
+      {/* Hero banner */}
+      <div style={{
+        backgroundColor: theme.primary,
+        color: theme.primaryText,
+        padding: "2rem",
+      }}>
+        <Link to="/" style={{ color: theme.primaryText, textDecoration: "none", opacity: 0.75, fontSize: "0.9rem" }}>
+          ← Back
+        </Link>
+        <h1 style={{ marginTop: "0.75rem", marginBottom: 0, fontSize: "2rem" }}>
+          {team.name}
+          <span style={{ fontWeight: "normal", opacity: 0.6, marginLeft: "0.5rem", fontSize: "1.2rem" }}>
+            ({team.abbreviation})
+          </span>
+        </h1>
+      </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem", marginTop: "2rem" }}>
+      <div style={{ maxWidth: "900px", margin: "0 auto", padding: "2rem" }}>
 
-        {/* All-time Stats */}
-        {s && Object.keys(s).length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem", marginTop: "0.5rem" }}>
+
+          {/* All-time Stats */}
+          {s && Object.keys(s).length > 0 && (
+            <section>
+              <h2 style={{ color: theme.primary }}>All-Time Stats</h2>
+              <p style={{ fontSize: "0.85rem", color: "#888", marginTop: "-0.5rem" }}>
+                Click the <span style={{ color: theme.accent }}>?</span> next to any stat for a plain-English explanation.
+              </p>
+              <table style={{ borderCollapse: "collapse", width: "100%" }}>
+                <tbody>
+                  {STAT_ORDER.map(key => s[key] != null && (
+                    <StatRow key={key} statKey={key} value={s[key]} theme={theme} />
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
+
+          {/* Team News placeholder */}
           <section>
-            <h2>All-Time Stats</h2>
-            <p style={{ fontSize: "0.85rem", color: "#888", marginTop: "-0.5rem" }}>
-              Click the <span style={{ color: "#7c3aed" }}>?</span> next to any stat for a plain-English explanation.
-            </p>
+            <h2 style={{ color: theme.primary }}>Team News</h2>
+            <div style={{ display: "grid", gap: "0.75rem" }}>
+              {[
+                "Match preview: What to expect this weekend",
+                "Injury update ahead of next fixture",
+                "Post-match: Three things we learned",
+              ].map((headline, i) => (
+                <div key={i} style={{
+                  padding: "1rem", border: "1px solid #e0e0e0",
+                  borderRadius: "8px", backgroundColor: theme.light
+                }}>
+                  <div style={{
+                    fontSize: "0.75rem", fontWeight: "bold", color: theme.accent,
+                    marginBottom: "0.25rem"
+                  }}>COMING SOON</div>
+                  <p style={{ margin: 0, color: "#555", fontStyle: "italic" }}>{headline}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        {/* Current Season Roster */}
+        {team.roster && team.roster.length > 0 && (
+          <section style={{ marginTop: "2rem" }}>
+            <h2 style={{ color: theme.primary }}>Current Season Roster</h2>
             <table style={{ borderCollapse: "collapse", width: "100%" }}>
+              <thead>
+                <tr style={{ borderBottom: `2px solid ${theme.accent}`, textAlign: "left" }}>
+                  <th style={{ padding: "8px 12px 8px 0" }}>Player</th>
+                  <th style={{ padding: "8px 12px 8px 0" }}>Position</th>
+                  <th style={{ padding: "8px 12px 8px 0" }}>Goals</th>
+                  <th style={{ padding: "8px 12px 8px 0" }}>Assists</th>
+                  <th style={{ padding: "8px 12px 8px 0" }}>xGoals</th>
+                  <th style={{ padding: "8px 12px 8px 0" }}>Minutes</th>
+                </tr>
+              </thead>
               <tbody>
-                {STAT_ORDER.map(key => s[key] != null && (
-                  <StatRow key={key} statKey={key} value={s[key]} />
+                {team.roster.map(p => (
+                  <tr key={p.player_id} style={{ borderBottom: "1px solid #eee" }}>
+                    <td style={{ padding: "8px 12px 8px 0" }}>
+                      <Link
+                        to={`/player/${p.player_name.toLowerCase().replace(/ /g, "-")}`}
+                        style={{ color: theme.accent, textDecoration: "none", fontWeight: "500" }}
+                      >
+                        {p.player_name}
+                      </Link>
+                    </td>
+                    <td style={{ padding: "8px 12px 8px 0" }}>{p.position || "—"}</td>
+                    <td style={{ padding: "8px 12px 8px 0" }}>{p.goals ?? "—"}</td>
+                    <td style={{ padding: "8px 12px 8px 0" }}>{p.assists ?? "—"}</td>
+                    <td style={{ padding: "8px 12px 8px 0" }}>{p.xgoals ?? "—"}</td>
+                    <td style={{ padding: "8px 12px 8px 0" }}>{p.minutes_played ?? "—"}</td>
+                  </tr>
                 ))}
               </tbody>
             </table>
           </section>
         )}
 
-        {/* Team News placeholder */}
-        <section>
-          <h2>Team News</h2>
-          <div style={{ display: "grid", gap: "0.75rem" }}>
-            {[
-              "Match preview: What to expect this weekend",
-              "Injury update ahead of next fixture",
-              "Post-match: Three things we learned",
-            ].map((headline, i) => (
-              <div key={i} style={{
-                padding: "1rem", border: "1px solid #e0e0e0",
-                borderRadius: "8px", backgroundColor: "#fafafa"
-              }}>
-                <div style={{
-                  fontSize: "0.75rem", fontWeight: "bold", color: "#7c3aed",
-                  marginBottom: "0.25rem"
-                }}>COMING SOON</div>
-                <p style={{ margin: 0, color: "#555", fontStyle: "italic" }}>{headline}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+        {/* Recent Results */}
+        {team.recent_games && team.recent_games.length > 0 && (
+          <section style={{ marginTop: "2rem" }}>
+            <h2 style={{ color: theme.primary }}>Recent Results</h2>
+            <div style={{ display: "grid", gap: "0.5rem" }}>
+              {team.recent_games.map(g => {
+                const isHome = g.home_team_id === teamId;
+                const isAway = g.away_team_id === teamId;
+                return (
+                  <div key={g.game_id} style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    padding: "0.75rem 1rem", border: "1px solid #e0e0e0",
+                    borderRadius: "8px", backgroundColor: theme.light
+                  }}>
+                    <div style={{ flex: 1, textAlign: "right" }}>
+                      <Link to={`/team/${g.home_team_id}`} style={{
+                        fontWeight: isHome ? "bold" : "normal",
+                        textDecoration: "none",
+                        color: isHome ? theme.accent : "#222"
+                      }}>
+                        {g.home_team_name}
+                      </Link>
+                    </div>
+                    <div style={{ padding: "0 1rem", fontWeight: "bold", minWidth: "80px", textAlign: "center" }}>
+                      {g.home_score} – {g.away_score}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <Link to={`/team/${g.away_team_id}`} style={{
+                        fontWeight: isAway ? "bold" : "normal",
+                        textDecoration: "none",
+                        color: isAway ? theme.accent : "#222"
+                      }}>
+                        {g.away_team_name}
+                      </Link>
+                    </div>
+                    <div style={{ color: "#888", fontSize: "0.85rem", marginLeft: "1rem", minWidth: "90px", textAlign: "right" }}>
+                      {g.date}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </div>
-
-      {/* Current Season Roster */}
-      {team.roster && team.roster.length > 0 && (
-        <section style={{ marginTop: "2rem" }}>
-          <h2>Current Season Roster</h2>
-          <table style={{ borderCollapse: "collapse", width: "100%" }}>
-            <thead>
-              <tr style={{ borderBottom: "2px solid #ccc", textAlign: "left" }}>
-                <th style={{ padding: "8px 12px 8px 0" }}>Player</th>
-                <th style={{ padding: "8px 12px 8px 0" }}>Position</th>
-                <th style={{ padding: "8px 12px 8px 0" }}>Goals</th>
-                <th style={{ padding: "8px 12px 8px 0" }}>Assists</th>
-                <th style={{ padding: "8px 12px 8px 0" }}>xGoals</th>
-                <th style={{ padding: "8px 12px 8px 0" }}>Minutes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {team.roster.map(p => (
-                <tr key={p.player_id} style={{ borderBottom: "1px solid #eee" }}>
-                  <td style={{ padding: "8px 12px 8px 0" }}>
-                    <Link
-                      to={`/player/${p.player_name.toLowerCase().replace(/ /g, "-")}`}
-                      style={{ color: "#7c3aed", textDecoration: "none" }}
-                    >
-                      {p.player_name}
-                    </Link>
-                  </td>
-                  <td style={{ padding: "8px 12px 8px 0" }}>{p.position || "—"}</td>
-                  <td style={{ padding: "8px 12px 8px 0" }}>{p.goals ?? "—"}</td>
-                  <td style={{ padding: "8px 12px 8px 0" }}>{p.assists ?? "—"}</td>
-                  <td style={{ padding: "8px 12px 8px 0" }}>{p.xgoals ?? "—"}</td>
-                  <td style={{ padding: "8px 12px 8px 0" }}>{p.minutes_played ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      )}
-
-      {/* Recent Results */}
-      {team.recent_games && team.recent_games.length > 0 && (
-        <section style={{ marginTop: "2rem" }}>
-          <h2>Recent Results</h2>
-          <div style={{ display: "grid", gap: "0.5rem" }}>
-            {team.recent_games.map(g => (
-              <div key={g.game_id} style={{
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-                padding: "0.75rem 1rem", border: "1px solid #e0e0e0",
-                borderRadius: "8px", backgroundColor: "#fafafa"
-              }}>
-                <div style={{ flex: 1, textAlign: "right" }}>
-                  <Link to={`/team/${g.home_team_id}`} style={{
-                    fontWeight: g.home_team_id === teamId ? "bold" : "normal",
-                    textDecoration: "none", color: "#222"
-                  }}>
-                    {g.home_team_name}
-                  </Link>
-                </div>
-                <div style={{ padding: "0 1rem", fontWeight: "bold", minWidth: "80px", textAlign: "center" }}>
-                  {g.home_score} – {g.away_score}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <Link to={`/team/${g.away_team_id}`} style={{
-                    fontWeight: g.away_team_id === teamId ? "bold" : "normal",
-                    textDecoration: "none", color: "#222"
-                  }}>
-                    {g.away_team_name}
-                  </Link>
-                </div>
-                <div style={{ color: "#888", fontSize: "0.85rem", marginLeft: "1rem", minWidth: "90px", textAlign: "right" }}>
-                  {g.date}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   );
 }
