@@ -18,5 +18,9 @@ frontend/.env.local
 # OS
 .DS_Store
 
+# IDE
+.idea/
+.vscode/
+
 # Misc
 NWSL-LFG.git/
