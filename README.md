@@ -1,65 +1,86 @@
 # ⚽ NWSL-LFG
 
-**The NWSL deserves cutting-edge fan engagement tech.**
+**The NWSL deserves a fan site built for its fans.**
 
-**NWSL-LFG** is a backend AI-powered personalization platform that helps National Women’s Soccer League (NWSL) fans engage more deeply with content, find matches to attend, and buy merch they love — driven by real-time behavioral analytics, recommendation systems, and generative AI.
-
-A project focused on building real-time analytics pipelines and intelligent recommendation systems — with a Phase 2 plan for full frontend integration and deployment.
+**NWSL-LFG** is a fan platform built specifically for female NWSL fans — giving them accessible stats and analysis, personalized team content, and a live community experience no other NWSL site offers.
 
 ---
 
-## 🚀 What It Does
-- 📊 Tracks user behavior across content, merch, and match engagement
-- 🎯 Recommends games, articles, and products based on user interests
-- 🧠 Uses GPT to generate personalized blurbs and ticket invites
+## 🎯 Vision
+
+A site where new fans and veterans both feel at home. Every stat comes with a plain-English explanation. Every data point connects back to what it means for *your* team. And on match day, you're never watching alone.
+
+---
+
+## ✨ Core Features
+
+### 📊 Accessible Stats & Analysis
+Real NWSL data — goals, xG, passing, shot quality — explained in plain English. No jargon without context. Every stat answers "what does this mean for my team?"
+
+### 💬 Live Watch-Along Rooms *(coming soon)*
+Match-timed chat rooms that open when a game kicks off. Join other fans in real time. Welcoming, moderated, and built for the experience of watching together — even when you're watching alone.
+
+### 📬 Personalized Team Feeds & Alerts *(coming soon)*
+Pick your team on signup. Get a daily digest of news, lineups, injury updates, and post-match breakdowns — all filtered to what matters to you. Alerts for match reminders, lineups, and final scores.
 
 ---
 
 ## 🛠️ Tech Stack
-- **Python** — Primary language
-- **SQLite or PostgreSQL** — Relational database for user and match data
-- **NumPy or Scikit-learn** — Clustering and content-based recommendation models
-- **OpenAI GPT API** — Dynamic content generation
-- **ASA API (itscalledsoccer)** — Live NWSL match and team data ingestion
-- **Flask or FastAPI** — Backend API framework
+
+- **Python / FastAPI** — Backend API
+- **PostgreSQL (Supabase)** — Cloud database
+- **React / Vite** — Frontend
+- **ASA API (itscalledsoccer)** — NWSL match, team, and player data
+- **OpenAI GPT API** — AI-assisted stat explainers and match analysis
+- **Vercel** — Deployment
 
 ---
 
-## 📅 Current Status (Phase 1: Backend MVP)
+## 📅 Build Status
 
 | Feature | Status |
 |:--------|:-------|
-| Data ingestion from ASA API | ⏳ In Progress |
-| User behavior tracking API | ⏳ Not started |
-| Recommendation engine (MVP) | ⏳ Not started |
-| GPT integration for content generation | ⏳ Not started |
-| Backend MVP launch | ⏳ Not started |
-| Frontend UI | 🔜 Phase 2 |
-| Full launch | 🔜 Phase 2 |
+| Data ingestion (teams, players, games, stats) | ✅ Done |
+| Team pages — roster, results, stats | ✅ Done |
+| Player pages — stats, recent form | ✅ Done |
+| Homepage — upcoming matches, analysis previews | 🔨 In Progress |
+| Plain-English stat explainers | 🔨 In Progress |
+| Deployment (Vercel) | 🔨 In Progress |
+| Team onboarding & personalized feed | 🔜 Planned |
+| Live watch-along rooms | 🔜 Planned |
+| Push/email alerts | 🔜 Planned |
+| Merch recommendations | 💡 Future |
+| Ticket & match attendance features | 💡 Future |
+
+---
+
+## 🗂️ Project Structure
+
+```
+NWSL-LFG/
+  backend/    # FastAPI app, data ingestion, Postgres schema
+  frontend/   # React/Vite fan site
+```
 
 ---
 
 ## 🌟 Why This Project Matters
 
-- Helps fans feel seen with personalized content and smart recommendations
-- Drives ticket and merch sales through intelligent user engagement
-- Showcases how LLMs (like GPT) and ML techniques can elevate sports marketing in a responsible, data-driven way
+- Female NWSL fans are an underserved audience — passionate, growing, and largely ignored by traditional sports media
+- Real-time community features (watch-along rooms) solve a genuine problem: fans who watch alone
+- Accessible analysis lowers the barrier for new fans without talking down to veterans
 
 ---
 
-## 🔮 Next Up (Phase 2)
-- Frontend UI 
-- Backend + Frontend Deployment
-- Real-time behavioral analytics dashboards
-- A/B testing for recommendation strategies
+## 🔮 Future Work
+- Merch recommendations
+- Ticket & match attendance features
 
 ---
 
 ## 🙋‍♀️ About Me
 
 I'm Erica Rios — an entrepreneurial product builder passionate about bridging strategy, execution, and AI innovation.
-
-I'm currently building projects that combine real-time data, AI techniques, and user-centered design to deliver the next generation of intelligent products.
 
 - 🔗 [Connect with me on LinkedIn](https://linkedin.com/in/ericarios)
 - 🌐 [More about me at ericarios.com](https://ericarios.com)
@@ -68,4 +89,4 @@ I'm currently building projects that combine real-time data, AI techniques, and 
 
 ## 📬 Feedback Welcome
 
-Whether you're an NWSL fan, an engineer, or a recruiter — I'd love your thoughts, feature ideas, or code reviews
+Whether you're an NWSL fan, an engineer, or a recruiter — I'd love your thoughts, feature ideas, or code reviews.
