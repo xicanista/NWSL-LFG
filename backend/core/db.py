@@ -261,9 +261,7 @@ def create_schema(conn):
                 goals_plus_primary_assists INTEGER,
                 xgoals_plus_xassists FLOAT,
                 points_added FLOAT,
-                xpoints_added FLOAT,
-                FOREIGN KEY (player_id) REFERENCES Players(player_id),
-                FOREIGN KEY (team_id) REFERENCES Teams(id)
+                xpoints_added FLOAT
             )
         ''',
 
@@ -296,6 +294,31 @@ def create_schema(conn):
                 avg_vertical_distance_yds FLOAT,
                 share_team_touches FLOAT,
                 count_games INTEGER
+            )
+        ''',
+
+        "PlayerSeasonStats": '''
+            CREATE TABLE IF NOT EXISTS PlayerSeasonStats (
+                player_id TEXT,
+                season_name TEXT,
+                team_id TEXT,
+                general_position TEXT,
+                minutes_played INTEGER,
+                shots INTEGER,
+                shots_on_target INTEGER,
+                goals INTEGER,
+                xgoals FLOAT,
+                xplace FLOAT,
+                goals_minus_xgoals FLOAT,
+                key_passes INTEGER,
+                primary_assists INTEGER,
+                xassists FLOAT,
+                primary_assists_minus_xassists FLOAT,
+                goals_plus_primary_assists INTEGER,
+                xgoals_plus_xassists FLOAT,
+                points_added FLOAT,
+                xpoints_added FLOAT,
+                PRIMARY KEY (player_id, season_name)
             )
         ''',
     }

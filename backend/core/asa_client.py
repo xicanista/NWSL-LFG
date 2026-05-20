@@ -446,6 +446,69 @@ def insert_periods(conn, data):
     conn.commit()
     print(f"✅ Periods inserted: {inserted}")
 
+def insert_player_season_stats(conn, data, season_name):
+    print(f"📥 insert_player_season_stats called for {season_name}")
+    cur = conn.cursor()
+    inserted = 0
+
+    for entry in data:
+        team_id = entry.get("team_id")
+        if isinstance(team_id, list):
+            team_id = json.dumps(team_id)
+
+        cur.execute('''
+            INSERT INTO PlayerSeasonStats (
+                player_id, season_name, team_id, general_position, minutes_played,
+                shots, shots_on_target, goals, xgoals, xplace,
+                goals_minus_xgoals, key_passes, primary_assists,
+                xassists, primary_assists_minus_xassists,
+                goals_plus_primary_assists, xgoals_plus_xassists,
+                points_added, xpoints_added
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (player_id, season_name) DO UPDATE SET
+                team_id = EXCLUDED.team_id,
+                general_position = EXCLUDED.general_position,
+                minutes_played = EXCLUDED.minutes_played,
+                shots = EXCLUDED.shots,
+                shots_on_target = EXCLUDED.shots_on_target,
+                goals = EXCLUDED.goals,
+                xgoals = EXCLUDED.xgoals,
+                xplace = EXCLUDED.xplace,
+                goals_minus_xgoals = EXCLUDED.goals_minus_xgoals,
+                key_passes = EXCLUDED.key_passes,
+                primary_assists = EXCLUDED.primary_assists,
+                xassists = EXCLUDED.xassists,
+                primary_assists_minus_xassists = EXCLUDED.primary_assists_minus_xassists,
+                goals_plus_primary_assists = EXCLUDED.goals_plus_primary_assists,
+                xgoals_plus_xassists = EXCLUDED.xgoals_plus_xassists,
+                points_added = EXCLUDED.points_added,
+                xpoints_added = EXCLUDED.xpoints_added
+        ''', (
+            entry.get("player_id"),
+            season_name,
+            team_id,
+            entry.get("general_position"),
+            entry.get("minutes_played"),
+            entry.get("shots"),
+            entry.get("shots_on_target"),
+            entry.get("goals"),
+            entry.get("xgoals"),
+            entry.get("xplace"),
+            entry.get("goals_minus_xgoals"),
+            entry.get("key_passes"),
+            entry.get("primary_assists"),
+            entry.get("xassists"),
+            entry.get("primary_assists_minus_xassists"),
+            entry.get("goals_plus_primary_assists"),
+            entry.get("xgoals_plus_xassists"),
+            entry.get("points_added"),
+            entry.get("xpoints_added")
+        ))
+        inserted += cur.rowcount
+
+    conn.commit()
+    print(f"✅ PlayerSeasonStats inserted/updated for {season_name}: {inserted}")
+
 def insert_shots(conn, data):
     print("📥 insert_shots called")
     cur = conn.cursor()

@@ -1,41 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 
 export default function PlayerPage() {
-  const player = {
-    full_name: "Sophia Smith",
-    position: "Forward",
-    nationality: "USA",
-    image_url: "https://example.com/sophia-smith.jpg",
-    stats: {
-      goals: 12,
-      assists: 5,
-      minutes_played: 980
-    },
-    merch: [
-      {
-        name: "Sophia Smith Home Jersey",
-        image_url: "https://example.com/home-jersey.jpg",
-        buy_link: "https://shop.example.com/home-jersey"
-      },
-      {
-        name: "Sophia Smith Away Jersey",
-        image_url: "https://example.com/away-jersey.jpg",
-        buy_link: "https://shop.example.com/away-jersey"
-      }
-    ]
-  };
+  const { slug } = useParams();
+  const [player, setPlayer] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const [hypeStates, setHypeStates] = useState({
-    cheer: false,
-    highFive: false,
-    lfg: false
-  });
+  const [hypeStates, setHypeStates] = useState({ cheer: false, highFive: false, lfg: false });
+  const [hypeCounts, setHypeCounts] = useState({ cheer: 0, highFive: 0, lfg: 0 });
 
-  const [hypeCounts, setHypeCounts] = useState({
-    cheer: 0,
-    highFive: 0,
-    lfg: 0
-  });
+  useEffect(() => {
+    fetch(`http://localhost:8000/api/player/${slug}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) setError(data.error);
+        else setPlayer(data);
+      })
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [slug]);
 
   const toggleHype = (type) => {
     setHypeStates((prevStates) => {
@@ -44,55 +28,53 @@ export default function PlayerPage() {
         ...prevCounts,
         [type]: isCurrentlyActive ? prevCounts[type] - 1 : prevCounts[type] + 1
       }));
-      return {
-        ...prevStates,
-        [type]: !isCurrentlyActive
-      };
+      return { ...prevStates, [type]: !isCurrentlyActive };
     });
   };
+
+  if (loading) return <p style={{ padding: "2rem" }}>Loading player...</p>;
+  if (error) return <p style={{ padding: "2rem", color: "red" }}>Error: {error}</p>;
 
   return (
     <div style={{ padding: "2rem" }}>
       <h1>{player.full_name}</h1>
-      <img src={player.image_url} alt={player.full_name} style={{ maxWidth: "100%", height: "auto" }} />
-      <p>Position: {player.position}</p>
-      <p>Nationality: {player.nationality}</p>
+      <p>Position: {player.position || "—"}</p>
+      <p>Nationality: {player.nationality || "—"}</p>
 
-      <h2>Key Stats</h2>
-      <ul>
-        <li>Goals: {player.stats.goals}</li>
-        <li>Assists: {player.stats.assists}</li>
-        <li>Minutes Played: {player.stats.minutes_played}</li>
-      </ul>
+      {player.stats && Object.keys(player.stats).length > 0 && (
+        <>
+          <h2>Stats {player.stats.season ? `(${player.stats.season} Season)` : ""}</h2>
+          {player.stats.team && <p>Team: {player.stats.team}</p>}
+          <ul>
+            {player.stats.goals != null && <li>Goals: {player.stats.goals}</li>}
+            {player.stats.assists != null && <li>Assists: {player.stats.assists}</li>}
+            {player.stats.shots != null && <li>Shots: {player.stats.shots}</li>}
+            {player.stats.xgoals != null && <li>xGoals: {player.stats.xgoals}</li>}
+            {player.stats.minutes_played != null && <li>Minutes Played: {player.stats.minutes_played}</li>}
+          </ul>
+        </>
+      )}
 
-      <h2>Shop Her Look</h2>
-      {player.merch.map((item, idx) => (
-        <div key={idx} style={{ border: "1px solid #ccc", padding: "1rem", marginBottom: "1rem" }}>
-          <img src={item.image_url} alt={item.name} style={{ maxWidth: "100px", height: "auto" }} />
-          <p>{item.name}</p>
-          <a href={item.buy_link} target="_blank" rel="noopener noreferrer">🛍️ Shop Now</a>
-        </div>
-      ))}
+      {player.merch && player.merch.length > 0 && (
+        <>
+          <h2>Shop Her Look</h2>
+          {player.merch.map((item, idx) => (
+            <div key={idx} style={{ border: "1px solid #ccc", padding: "1rem", marginBottom: "1rem" }}>
+              <p>{item.name}</p>
+              <a href={item.buy_link} target="_blank" rel="noopener noreferrer">🛍️ Shop Now</a>
+            </div>
+          ))}
+        </>
+      )}
 
       <h2>Hype Her Up!</h2>
-      <button
-        onClick={() => toggleHype("cheer")}
-        style={{ backgroundColor: hypeStates.cheer ? "yellow" : "white" }}
-      >
+      <button onClick={() => toggleHype("cheer")} style={{ backgroundColor: hypeStates.cheer ? "yellow" : "white", marginRight: "0.5rem" }}>
         🎉 Cheer ({hypeCounts.cheer})
       </button>
-
-      <button
-        onClick={() => toggleHype("highFive")}
-        style={{ backgroundColor: hypeStates.highFive ? "yellow" : "white" }}
-      >
+      <button onClick={() => toggleHype("highFive")} style={{ backgroundColor: hypeStates.highFive ? "yellow" : "white", marginRight: "0.5rem" }}>
         🙌 High Five ({hypeCounts.highFive})
       </button>
-
-      <button
-        onClick={() => toggleHype("lfg")}
-        style={{ backgroundColor: hypeStates.lfg ? "yellow" : "white" }}
-      >
+      <button onClick={() => toggleHype("lfg")} style={{ backgroundColor: hypeStates.lfg ? "yellow" : "white" }}>
         🔥 LFG ({hypeCounts.lfg})
       </button>
     </div>
