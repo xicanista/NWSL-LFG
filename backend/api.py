@@ -53,6 +53,34 @@ def get_all_teams():
     conn.close()
     return {"teams": [{"id": row[0], "name": row[1]} for row in rows]}
 
+@app.get("/api/recent-matches")
+def get_recent_matches():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT g.game_id, g.date_time_utc, g.home_score, g.away_score,
+               g.home_team_id, g.away_team_id, g.season_name, g.attendance,
+               ht.name AS home_team_name, at.name AS away_team_name
+        FROM Games g
+        JOIN Teams ht ON g.home_team_id = ht.id
+        JOIN Teams at ON g.away_team_id = at.id
+        ORDER BY g.date_time_utc DESC
+        LIMIT 8
+    """)
+    rows = cur.fetchall()
+    conn.close()
+    return {"matches": [
+        {
+            "game_id": r[0],
+            "date": r[1].strftime("%b %d, %Y") if r[1] else None,
+            "home_score": r[2], "away_score": r[3],
+            "home_team_id": r[4], "away_team_id": r[5],
+            "season": r[6], "attendance": r[7],
+            "home_team_name": r[8], "away_team_name": r[9],
+        }
+        for r in rows
+    ]}
+
 @app.get("/api/team/{team_id}")
 def get_team(team_id: str):
     conn = get_db_connection()
@@ -133,7 +161,7 @@ def get_player_details(firstname: str, lastname: str):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "SELECT player_id, player_name, primary_general_position, nationality FROM Players WHERE LOWER(player_name) = LOWER(%s)",
+        "SELECT player_id, player_name, primary_general_position, nationality, birth_date, height_ft, height_in FROM Players WHERE LOWER(player_name) = LOWER(%s)",
         (f"{firstname} {lastname}",)
     )
     player = cur.fetchone()
@@ -142,7 +170,7 @@ def get_player_details(firstname: str, lastname: str):
         conn.close()
         return {"error": "Player not found"}
 
-    player_id, player_name, position, nationality = player
+    player_id, player_name, position, nationality, birth_date, height_ft, height_in = player
 
     cur.execute("""
         SELECT s.season_name, s.team_id, t.name, s.general_position,
@@ -155,10 +183,11 @@ def get_player_details(firstname: str, lastname: str):
         LIMIT 1
     """, (player_id,))
     stats_row = cur.fetchone()
-    conn.close()
 
     stats = {}
+    current_team_id = None
     if stats_row:
+        current_team_id = stats_row[1]
         stats = {
             "season": stats_row[0],
             "team": stats_row[2] or stats_row[1],
@@ -171,10 +200,43 @@ def get_player_details(firstname: str, lastname: str):
             "minutes_played": stats_row[9],
         }
 
+    recent_games = []
+    if current_team_id:
+        cur.execute("""
+            SELECT g.date_time_utc, g.home_score, g.away_score,
+                   g.home_team_id, g.away_team_id,
+                   ht.name, at.name
+            FROM Games g
+            JOIN Teams ht ON g.home_team_id = ht.id
+            JOIN Teams at ON g.away_team_id = at.id
+            WHERE (g.home_team_id = %s OR g.away_team_id = %s)
+            AND g.season_name = %s
+            ORDER BY g.date_time_utc DESC
+            LIMIT 5
+        """, (current_team_id, current_team_id, stats_row[0]))
+        for r in cur.fetchall():
+            is_home = r[3] == current_team_id
+            team_score = r[1] if is_home else r[2]
+            opp_score = r[2] if is_home else r[1]
+            opp_name = r[6] if is_home else r[5]
+            if team_score > opp_score: result = "W"
+            elif team_score < opp_score: result = "L"
+            else: result = "D"
+            recent_games.append({
+                "date": r[0].strftime("%b %d") if r[0] else None,
+                "opponent": opp_name,
+                "score": f"{team_score}–{opp_score}",
+                "result": result,
+                "home": is_home,
+            })
+
+    conn.close()
     return {
         "full_name": player_name,
         "position": position,
         "nationality": nationality,
+        "birth_date": str(birth_date) if birth_date else None,
+        "height": f"{height_ft}'{height_in}\"" if height_ft else None,
         "stats": stats,
-        "merch": []
+        "recent_games": recent_games,
     }
